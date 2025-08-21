@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Study Adda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js" charset="utf-8"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #4f46e5; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .nav-link { transition: all 0.2s ease; }
+        .nav-link.active { background-color: #4f46e5; color: white; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        #profile-menu { transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out; }
+        #edit-profile-modal { transition: opacity 0.3s ease-in-out; }
+        #edit-profile-modal > div { transition: transform 0.3s ease-in-out; }
+        .uploadcare--widget__button_type_open { background-color: #eef2ff !important; color: #4338ca !important; border-radius: 9999px !important; padding: 8px 16px !important; font-weight: 600 !important; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50">
+
+    <!-- Loading Spinner & Overlays -->
+    <div id="loading-overlay" class="fixed inset-0 bg-white flex flex-col items-center justify-center z-50">
+        <div class="loader"></div>
+        <p class="mt-4 text-gray-600">Loading your dashboard...</p>
+    </div>
+    <div id="upload-overlay" class="hidden fixed inset-0 bg-gray-900 bg-opacity-60 flex flex-col items-center justify-center z-50">
+        <div class="loader"></div>
+        <p id="upload-status" class="mt-4 text-white font-semibold">Saving file...</p>
+    </div>
+
+    <!-- Main App Layout -->
+    <div id="app-layout" class="hidden">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-gray-800 text-gray-100 w-64 min-h-screen p-4 fixed lg:relative lg:translate-x-0 transform -translate-x-full z-40">
+            <div class="flex items-center justify-between mb-8">
+                <h1 class="text-2xl font-bold text-white">Study<span class="text-indigo-400">Adda</span></h1>
+                <button id="sidebar-close-button" class="lg:hidden text-gray-400 hover:text-white"><i data-feather="x"></i></button>
+            </div>
+            <nav id="sidebar-nav"></nav>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="flex-1 flex flex-col min-h-screen">
+            <!-- Header -->
+            <header class="bg-white/70 backdrop-blur-lg shadow-sm sticky top-0 z-30">
+                <div class="max-w-full mx-auto py-3 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <button id="sidebar-open-button" class="text-gray-500 focus:outline-none"><i data-feather="menu"></i></button>
+                    <div class="flex-1"></div>
+                    <div class="relative">
+                        <button id="profile-button" class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold cursor-pointer"></button>
+                        <div id="profile-menu" class="hidden absolute right-0 mt-2 w-56 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none transform opacity-0 scale-95">
+                            <div class="py-1">
+                                <div class="px-4 py-2 border-b"><p id="profile-menu-name" class="text-sm font-semibold text-gray-900"></p><p id="profile-menu-email" class="text-sm text-gray-500 truncate"></p></div>
+                                <a href="#" id="edit-profile-button" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-feather="edit-2" class="mr-3 h-4 w-4"></i>Edit Profile</a>
+                                <a href="#" id="sign-out-button" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"><i data-feather="log-out" class="mr-3 h-4 w-4"></i>Sign Out</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            <!-- Main Dashboard Area -->
+            <main class="flex-1 p-6"><div class="max-w-7xl mx-auto"><div id="tab-content"></div></div></main>
+
+            <!-- Footer -->
+            <footer class="text-center py-4 text-sm text-gray-500 leading-relaxed">
+                <p>&copy; <span id="footer-year"></span> Study Adda | All Rights Reserved.</p>
+                <p>Developed by <strong>Soldier Vishnu</strong> | REVA University, Bengaluru</p>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div id="edit-profile-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform translate-y-10">
+            <div class="flex justify-between items-center pb-3 border-b"><p class="text-2xl font-bold">Edit Profile</p><button id="modal-close-button" class="cursor-pointer z-50"><i data-feather="x"></i></button></div>
+            <form id="edit-profile-form" class="mt-4 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4"><input id="edit-first-name" type="text" placeholder="First Name" class="w-full px-3 py-2 border border-gray-300 rounded-md"><input id="edit-last-name" type="text" placeholder="Last Name" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <!-- Student-only fields -->
+                <div id="edit-student-fields" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <select id="edit-branch" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"><option value="" disabled>Select Branch</option><option value="CSE">CSE</option><option value="CSE(AI&DS)">CSE(AI&DS)</option><option value="CSE(AI&ML)">CSE(AI&ML)</option><option value="CSE(IOT)">CSE(IOT)</option><option value="ISE">ISE</option><option value="ECE">ECE</option></select>
+                    <select id="edit-semester" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"><option value="" disabled>Select Semester</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option></select>
+                </div>
+                <div><input id="edit-password" type="password" placeholder="New Password (optional)" class="w-full px-3 py-2 border border-gray-300 rounded-md"></div>
+                <div class="flex justify-end pt-2"><button type="submit" class="px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700">Save Changes</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Firebase SDK and Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8WTb1aLzIb545X4zOAAoqRp-qyEfsJ44",
+            authDomain: "studyadda-reva.firebaseapp.com",
+            projectId: "studyadda-reva",
+            storageBucket: "studyadda-reva.appspot.com",
+            messagingSenderId: "643622596691",
+            appId: "1:643622596691:web:c17753cfc4ba23e37056a6",
+            measurementId: "G-HNYHTTE0X1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const uploadOverlay = document.getElementById('upload-overlay');
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const appLayout = document.getElementById('app-layout');
+        const sidebarNav = document.getElementById('sidebar-nav');
+        const tabContent = document.getElementById('tab-content');
+        const profileButton = document.getElementById('profile-button');
+        const profileMenu = document.getElementById('profile-menu');
+        const sidebar = document.getElementById('sidebar');
+        const openSidebarBtn = document.getElementById('sidebar-open-button');
+        const closeSidebarBtn = document.getElementById('sidebar-close-button');
+        const modal = document.getElementById('edit-profile-modal');
+        const modalCloseBtn = document.getElementById('modal-close-button');
+        const editProfileForm = document.getElementById('edit-profile-form');
+
+        let currentUserData = null;
+
+        const studentTabs = [ { href: 'notes.html', title: 'Notes', icon: 'book-open' }, { href: 'questions.html', title: 'Important Questions', icon: 'help-circle' }, { href: 'papers.html', title: 'Previous Year QPs', icon: 'file-text' }, { href: 'assignments.html', title: 'Assignments', icon: 'clipboard' }, { href: 'chat.html', title: 'Anonymous Chat', icon: 'message-square' }];
+        const lecturerTabs = [{ id: 'upload', title: 'Upload Content', icon: 'upload-cloud' }, { href: 'my-uploads.html', title: 'My Uploads', icon: 'list' }];
+
+        function initializeDashboardUI(role, userData) {
+            const tabs = role === 'student' ? studentTabs : lecturerTabs;
+            sidebarNav.innerHTML = tabs.map((tab, index) => {
+                if (tab.href) { return `<a href="${tab.href}" class="nav-link flex items-center p-3 my-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white"><i data-feather="${tab.icon}" class="mr-3"></i><span>${tab.title}</span></a>`; }
+                return `<a href="#" data-tab-id="${tab.id}" class="nav-link flex items-center p-3 my-2 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white ${index === 0 ? 'active' : ''}"><i data-feather="${tab.icon}" class="mr-3"></i><span>${tab.title}</span></a>`;
+            }).join('');
+            
+            tabContent.innerHTML = tabs.filter(t => t.id).map((tab, index) => `<div id="content-${tab.id}" class="${index === 0 ? '' : 'hidden'}">${getTabContent(tab.id, userData)}</div>`).join('');
+            document.querySelectorAll('.nav-link[data-tab-id]').forEach(link => link.addEventListener('click', handleNavLinkClick));
+            
+            profileButton.textContent = userData.firstName.charAt(0).toUpperCase();
+            document.getElementById('profile-menu-name').textContent = `${userData.firstName} ${userData.lastName}`;
+            document.getElementById('profile-menu-email').textContent = userData.email;
+
+            if (role === 'lecturer') {
+                initializeUploadcareWidget();
+            }
+            
+            document.getElementById('footer-year').textContent = new Date().getFullYear();
+        }
+
+        function getTabContent(tabId, userData) {
+            const commonStyles = "bg-white/60 backdrop-blur-xl p-8 rounded-2xl shadow-lg border border-white/30";
+            switch (tabId) {
+                case 'upload':
+                    return `<div class="${commonStyles}">
+                                <h3 class="text-3xl font-bold text-gray-900">Upload New Content</h3>
+                                <p class="mt-2 text-gray-600">Select all details for the content you want to upload.</p>
+                                <div class="mt-8 space-y-6">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="upload-branch" class="block text-sm font-medium text-gray-700">For Branch</label>
+                                            <select id="upload-branch" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option value="CSE">CSE</option><option value="CSE(AI&DS)">CSE(AI&DS)</option><option value="CSE(AI&ML)">CSE(AI&ML)</option><option value="CSE(IOT)">CSE(IOT)</option><option value="ISE">ISE</option><option value="ECE">ECE</option></select>
+                                        </div>
+                                        <div>
+                                            <label for="upload-semester" class="block text-sm font-medium text-gray-700">For Semester</label>
+                                            <select id="upload-semester" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label for="subject-name" class="block text-sm font-medium text-gray-700">Subject Name</label>
+                                            <select id="subject-name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                                ${Array.from({length: 10}, (_, i) => `<option value="Sub-0${i+1}">Sub-0${i+1}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label for="content-type" class="block text-sm font-medium text-gray-700">Content Type</label>
+                                            <select id="content-type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"><option>Notes</option><option>Important Questions</option><option>Previous Year QPs</option><option>Assignments</option></select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">File (PDF only)</label>
+                                        <input type="hidden" role="uploadcare-uploader" id="uploadcare-widget" />
+                                    </div>
+                                </div>
+                            </div>`;
+                default:
+                    return `<div class="${commonStyles}">
+                                <h3 class="text-3xl font-bold text-gray-900">Welcome, ${userData.firstName}!</h3>
+                                <p class="mt-2 text-gray-600">Select an option from the sidebar to get started on your learning journey.</p>
+                            </div>`;
+            }
+        }
+        
+        function handleNavLinkClick(e) {
+            e.preventDefault();
+            const clickedLink = e.currentTarget;
+            const tabId = clickedLink.dataset.tabId;
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            clickedLink.classList.add('active');
+            document.querySelectorAll('#tab-content > div').forEach(panel => panel.classList.add('hidden'));
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            sidebar.classList.add('-translate-x-full');
+        }
+
+        function initializeUploadcareWidget() {
+            const uploaderInput = document.getElementById('uploadcare-widget');
+            if (!uploaderInput) return;
+            
+            const UPLOADCARE_PUBLIC_KEY = "7743b9a72496f31d429c";
+            uploaderInput.dataset.publicKey = UPLOADCARE_PUBLIC_KEY;
+            const widget = uploadcare.Widget(uploaderInput);
+
+            widget.onUploadComplete(async (fileInfo) => {
+                const branch = document.getElementById('upload-branch').value;
+                const semester = document.getElementById('upload-semester').value;
+                const subjectName = document.getElementById('subject-name').value;
+                const contentType = document.getElementById('content-type').value;
+                const user = auth.currentUser;
+
+                if (!branch || !semester || !subjectName || !contentType) { alert("Please fill out all fields before uploading."); widget.value(null); return; }
+                uploadOverlay.classList.remove('hidden');
+                try {
+                    await addDoc(collection(db, "content"), {
+                        subjectName: subjectName,
+                        contentType: contentType,
+                        branch: branch,
+                        semester: semester,
+                        fileURL: fileInfo.cdnUrl, 
+                        fileName: fileInfo.name, 
+                        uploaderId: user.uid,
+                        uploaderName: `${currentUserData.firstName} ${currentUserData.lastName}`, 
+                        createdAt: new Date()
+                    });
+                    alert("Content uploaded successfully!");
+                    widget.value(null);
+                } catch (error) { console.error("Error saving to Firestore:", error); alert("File uploaded, but failed to save details."); } 
+                finally { uploadOverlay.classList.add('hidden'); }
+            });
+        }
+        
+        function toggleSidebar() { sidebar.classList.toggle('-translate-x-full'); }
+        function toggleProfileMenu() { if (profileMenu.classList.contains('hidden')) { profileMenu.classList.remove('hidden'); setTimeout(() => profileMenu.classList.remove('opacity-0', 'scale-95'), 10); } else { profileMenu.classList.add('opacity-0', 'scale-95'); setTimeout(() => profileMenu.classList.add('hidden'), 200); } }
+        
+        // UPDATED: This function now hides branch/semester for lecturers
+        function openEditProfileModal() {
+            if (!currentUserData) return;
+            document.getElementById('edit-first-name').value = currentUserData.firstName;
+            document.getElementById('edit-last-name').value = currentUserData.lastName;
+            document.getElementById('edit-password').value = '';
+            
+
+
+            
+            const studentFields = document.getElementById('edit-student-fields');
+            if (currentUserData.role === 'student') {
+                studentFields.style.display = 'grid';
+                document.getElementById('edit-branch').required = true;
+                document.getElementById('edit-semester').required = true;
+                document.getElementById('edit-branch').value = currentUserData.branch;
+                document.getElementById('edit-semester').value = currentUserData.semester;
+            } else {
+                studentFields.style.display = 'none';
+                document.getElementById('edit-branch').required = false;
+                document.getElementById('edit-semester').required = false;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeEditProfileModal() { modal.classList.add('hidden'); }
+
+        // UPDATED: This function now only saves branch/semester for students
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) return;
+            
+            const updatedData = {
+                firstName: document.getElementById('edit-first-name').value,
+                lastName: document.getElementById('edit-last-name').value,
+            };
+
+            if (currentUserData.role === 'student') {
+                updatedData.branch = document.getElementById('edit-branch').value;
+                updatedData.semester = document.getElementById('edit-semester').value;
+            }
+
+            const newPassword = document.getElementById('edit-password').value;
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                await updateDoc(userDocRef, updatedData);
+                if (newPassword) {
+                    await updatePassword(user, newPassword);
+                }
+                alert("Profile updated successfully!");
+                closeEditProfileModal();
+                window.location.reload();
+            } catch (error) {
+                console.error("Error updating profile:", error);
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function handleSignOut() { try { await signOut(auth); window.location.href = 'index.html'; } catch (error) { console.error("Sign out error:", error); } }
+        onAuthStateChanged(auth, async (user) => { if (user) { const userDocRef = doc(db, "users", user.uid); const userDocSnap = await getDoc(userDocRef); if (userDocSnap.exists()) { currentUserData = userDocSnap.data(); initializeDashboardUI(currentUserData.role, currentUserData); appLayout.classList.remove('hidden'); appLayout.classList.add('flex'); loadingOverlay.classList.add('hidden'); feather.replace(); } else { handleSignOut(); } } else { window.location.href = 'index.html'; } });
+        openSidebarBtn.addEventListener('click', toggleSidebar); closeSidebarBtn.addEventListener('click', toggleSidebar); profileButton.addEventListener('click', toggleProfileMenu);
+        window.addEventListener('click', (e) => { if (!profileButton.contains(e.target) && !profileMenu.contains(e.target)) { if (!profileMenu.classList.contains('hidden')) { toggleProfileMenu(); } } });
+        document.getElementById('edit-profile-button').addEventListener('click', (e) => { e.preventDefault(); openEditProfileModal(); toggleProfileMenu(); });
+        modalCloseBtn.addEventListener('click', closeEditProfileModal); editProfileForm.addEventListener('submit', handleProfileUpdate);
+        document.getElementById('sign-out-button').addEventListener('click', (e) => { e.preventDefault(); handleSignOut(); });
+
+    </script>
+</body>
+</html>

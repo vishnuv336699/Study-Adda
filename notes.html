@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notes - Study Adda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader { border: 5px solid #f3f3f3; border-top: 5px solid #4f46e5; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .tab-button.active { 
+            border-color: #4f46e5; 
+            color: #4f46e5; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-900">Course Notes</h1>
+                <a href="dashboard.html" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200">
+                    <i data-feather="arrow-left" class="mr-2 h-4 w-4"></i> Back to Dashboard
+                </a>
+            </div>
+        </header>
+        <!-- Main Area -->
+        <main class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8 w-full">
+            <div id="content-container">
+                <div class="loader mx-auto"></div> <!-- Initial loader -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Firebase SDK and Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA8WTb1aLzIb545X4zOAAoqRp-qyEfsJ44",
+            authDomain: "studyadda-reva.firebaseapp.com",
+            projectId: "studyadda-reva",
+            storageBucket: "studyadda-reva.appspot.com",
+            messagingSenderId: "643622596691",
+            appId: "1:643622596691:web:c17753cfc4ba23e37056a6",
+            measurementId: "G-HNYHTTE0X1"
+        };
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const mainContent = document.getElementById('main-content');
+        const contentContainer = document.getElementById('content-container');
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userDocRef = doc(db, "users", user.uid);
+                const userDocSnap = await getDoc(userDocRef);
+                if (userDocSnap.exists()) {
+                    mainContent.classList.remove('hidden');
+                    feather.replace();
+                    loadContent(userDocSnap.data());
+                } else { window.location.href = 'index.html'; }
+            } else { window.location.href = 'index.html'; }
+        });
+
+        function loadContent(userData) {
+            const CONTENT_TYPE = "Notes";
+            const q = query(collection(db, "content"), 
+                where("branch", "==", userData.branch), 
+                where("semester", "==", userData.semester),
+                where("contentType", "==", CONTENT_TYPE)
+            );
+
+            onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    contentContainer.innerHTML = `<div class="text-center py-10"><p class="text-gray-500">No ${CONTENT_TYPE.toLowerCase()} found for your course yet.</p></div>`;
+                    return;
+                }
+                
+                const allContent = snapshot.docs.map(doc => doc.data());
+                const subjects = [...new Set(allContent.map(item => item.subjectName))].sort();
+
+                let tabsHTML = '<div class="border-b border-gray-200 bg-white rounded-t-lg p-2"><nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">';
+                subjects.forEach((sub, index) => {
+                    tabsHTML += `<button data-subject="${sub}" class="tab-button whitespace-nowrap py-4 px-3 border-b-2 font-medium text-sm ${index === 0 ? 'active border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}">${sub}</button>`;
+                });
+                tabsHTML += '</nav></div>';
+
+                let panelsHTML = '<div class="mt-1">';
+                subjects.forEach((sub, index) => {
+                    const filesForSubject = allContent.filter(item => item.subjectName === sub);
+                    panelsHTML += `<div id="panel-${sub.replace(/\s+/g, '-')}" class="space-y-3 bg-white p-4 rounded-b-lg ${index === 0 ? '' : 'hidden'}">`;
+                    filesForSubject.forEach(file => {
+                        panelsHTML += `<a href="viewer.html?note=${encodeURIComponent(file.fileURL)}" target="_blank" class="block p-4 bg-gray-50 hover:bg-indigo-50 rounded-lg border border-gray-200 transition-all duration-200">
+                                        <div class="flex justify-between items-center">
+                                            <div><p class="font-semibold text-indigo-700">${file.fileName}</p><p class="text-sm text-gray-500">Uploaded by ${file.uploaderName}</p></div>
+                                            <i data-feather="eye" class="text-gray-400"></i>
+                                        </div>
+                                      </a>`;
+                    });
+                    panelsHTML += `</div>`;
+                });
+                panelsHTML += '</div>';
+
+                contentContainer.innerHTML = tabsHTML + panelsHTML;
+                feather.replace();
+
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const subject = e.currentTarget.dataset.subject;
+                        document.querySelectorAll('.tab-button').forEach(btn => {
+                            btn.classList.remove('active', 'border-indigo-500', 'text-indigo-600');
+                            btn.classList.add('border-transparent', 'text-gray-500');
+                        });
+                        e.currentTarget.classList.add('active', 'border-indigo-500', 'text-indigo-600');
+                        document.querySelectorAll('[id^="panel-"]').forEach(panel => panel.classList.add('hidden'));
+                        document.getElementById(`panel-${subject.replace(/\s+/g, '-')}`).classList.remove('hidden');
+                    });
+                });
+            });
+        }
+    </script>
+</body>
+</html>

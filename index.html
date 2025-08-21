@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyAdda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #4f46e5;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Styles for the new role selection modal */
+        #role-modal { transition: opacity 0.3s ease-in-out; }
+        #role-modal > div { transition: transform 0.3s ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+
+    <div id="auth-container" class="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-lg m-4">
+        
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">
+                Study<span class="text-indigo-600">Adda</span>
+            </h1>
+            <p id="form-title" class="mt-2 text-sm text-gray-600">Welcome! Please sign in to your account.</p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="mt-8 space-y-6">
+            <div class="rounded-md shadow-sm -space-y-px">
+                <input id="login-identity" type="text" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Email Address">
+                <input id="login-password" type="password" autocomplete="current-password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Password">
+            </div>
+            <div>
+                <button id="login-button" type="submit" class="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <span class="button-text">Sign in</span>
+                    <div class="loader hidden ml-3"></div>
+                </button>
+            </div>
+        </form>
+
+        <!-- Registration Form (Initially Hidden) -->
+        <form id="register-form" class="hidden mt-8 space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input id="first-name" type="text" required class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="First Name">
+                <input id="last-name" type="text" required class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Last Name">
+                
+
+
+            </div>
+            <input id="register-mobile" type="tel" required class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Mobile Number">
+            <input id="register-email" type="email" autocomplete="email" required class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Email address">
+            
+            <!-- Student-specific fields (hidden by default) -->
+            <div id="student-fields" class="hidden grid-cols-1 md:grid-cols-2 gap-4">
+                 <select id="branch" name="branch" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="" disabled selected>Select Branch</option>
+                    <option value="CSE">CSE</option>
+                    <option value="CSE(AI&DS)">CSE(AI&DS)</option>
+                    <option value="CSE(IOT)">CSE(IOT)</option>
+                    
+                 </select>
+                 <select id="semester" name="semester" class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <option value="" disabled selected>Select Semester</option>
+                    <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+                    <option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+                 </select>
+            </div>
+
+            <input id="register-password" type="password" autocomplete="new-password" required class="appearance-none block w-full px-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Password">
+            
+            <div>
+                <button id="register-button" type="submit" class="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <span class="button-text">Create Account</span>
+                    <div class="loader hidden ml-3"></div>
+                </button>
+            </div>
+        </form>
+
+        <!-- Toggle between Login and Register -->
+        <div class="text-sm text-center">
+            <p id="toggle-text">Don't have an account? <a href="#" id="toggle-link" class="font-medium text-indigo-600 hover:text-indigo-500">Sign up</a></p>
+        </div>
+        
+        <div id="message-box" class="hidden p-4 rounded-md text-sm"></div>
+    </div>
+
+    <!-- Role Selection Modal -->
+    <div id="role-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="relative p-8 border w-full max-w-sm shadow-lg rounded-md bg-white transform translate-y-10">
+            <div class="text-center">
+                <h3 class="text-2xl font-bold text-gray-900">Join as a...</h3>
+                <div class="mt-6 flex flex-col space-y-4">
+                    <button data-role="student" class="role-select-button w-full px-4 py-3 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700">Student</button>
+                    <button data-role="lecturer" class="role-select-button w-full px-4 py-3 bg-gray-700 text-white text-base font-medium rounded-md shadow-sm hover:bg-gray-800">Lecturer</button>
+                </div>
+                <button id="modal-cancel-button" class="mt-6 text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+      import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+      import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+      
+      const firebaseConfig = {
+        apiKey: "AIzaSyA8WTb1aLzIb545X4zOAAoqRp-qyEfsJ44",
+        authDomain: "studyadda-reva.firebaseapp.com",
+        projectId: "studyadda-reva",
+        storageBucket: "studyadda-reva.appspot.com",
+        messagingSenderId: "643622596691",
+        appId: "1:643622596691:web:c17753cfc4ba23e37056a6",
+        measurementId: "G-HNYHTTE0X1"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      window.auth = getAuth(app);
+      window.db = getFirestore(app);
+      window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+      window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+      window.doc = doc;
+      window.setDoc = setDoc;
+    </script>
+    
+    <script>
+        const authContainer = document.getElementById('auth-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const toggleLink = document.getElementById('toggle-link');
+        const messageBox = document.getElementById('message-box');
+        const studentFields = document.getElementById('student-fields');
+        const roleModal = document.getElementById('role-modal');
+        const modalCancelButton = document.getElementById('modal-cancel-button');
+        const roleSelectButtons = document.querySelectorAll('.role-select-button');
+
+        let selectedRole = 'student'; // Default role
+
+        function toggleButtonLoading(button, isLoading) {
+            const buttonText = button.querySelector('.button-text');
+            const loader = button.querySelector('.loader');
+            if (isLoading) {
+                button.disabled = true;
+                buttonText.classList.add('hidden');
+                loader.classList.remove('hidden');
+            } else {
+                button.disabled = false;
+                buttonText.classList.remove('hidden');
+                loader.classList.add('hidden');
+            }
+        }
+
+        function showRoleModal() {
+            roleModal.classList.remove('hidden');
+        }
+
+        function hideRoleModal() {
+            roleModal.classList.add('hidden');
+        }
+
+        function startRegistration(role) {
+            selectedRole = role;
+            hideRoleModal();
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
+            authContainer.classList.remove('hidden');
+
+            document.getElementById('form-title').textContent = `Create a new ${role} account.`;
+            document.getElementById('toggle-text').innerHTML = `Already have an account? <a href="#" id="toggle-link" class="font-medium text-indigo-600 hover:text-indigo-500">Sign in</a>`;
+            document.getElementById('toggle-link').addEventListener('click', (e) => { e.preventDefault(); showLoginView(); });
+            
+            // Show/hide student fields based on role
+            if (role === 'student') {
+                studentFields.style.display = 'grid';
+                document.getElementById('branch').required = true;
+                document.getElementById('semester').required = true;
+            } else {
+                studentFields.style.display = 'none';
+                document.getElementById('branch').required = false;
+                document.getElementById('semester').required = false;
+            }
+        }
+        
+        function showLoginView() {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
+            document.getElementById('form-title').textContent = 'Welcome! Please sign in to your account.';
+            document.getElementById('toggle-text').innerHTML = `Don't have an account? <a href="#" id="toggle-link" class="font-medium text-indigo-600 hover:text-indigo-500">Sign up</a>`;
+            document.getElementById('toggle-link').addEventListener('click', (e) => { e.preventDefault(); showRoleModal(); });
+        }
+
+        function showMessage(message, type = 'error') {
+            messageBox.textContent = message;
+            messageBox.className = `p-4 rounded-md text-sm ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`;
+            setTimeout(() => messageBox.className = 'hidden', 5000);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const button = document.getElementById('login-button');
+            toggleButtonLoading(button, true);
+            const email = document.getElementById('login-identity').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                await window.signInWithEmailAndPassword(window.auth, email, password);
+                showMessage("Login successful! Redirecting...", "success");
+                setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+            } catch (error) {
+                showMessage(error.message, "error");
+            } finally {
+                toggleButtonLoading(button, false);
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const button = document.getElementById('register-button');
+            toggleButtonLoading(button, true);
+
+            const userData = {
+                firstName: document.getElementById('first-name').value,
+                lastName: document.getElementById('last-name').value,
+                mobile: document.getElementById('register-mobile').value,
+                email: document.getElementById('register-email').value,
+                role: selectedRole,
+                createdAt: new Date()
+            };
+            
+            if (selectedRole === 'student') {
+                userData.branch = document.getElementById('branch').value;
+                userData.semester = document.getElementById('semester').value;
+            }
+
+            const password = document.getElementById('register-password').value;
+
+            try {
+                const userCredential = await window.createUserWithEmailAndPassword(window.auth, userData.email, password);
+                const user = userCredential.user;
+                await window.setDoc(window.doc(window.db, "users", user.uid), userData);
+                showMessage("Registration successful! Please sign in.", "success");
+                showLoginView();
+            } catch (error) {
+                showMessage(error.message, "error");
+            } finally {
+                toggleButtonLoading(button, false);
+            }
+        }
+
+        // --- Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        registerForm.addEventListener('submit', handleRegister);
+        toggleLink.addEventListener('click', (e) => { e.preventDefault(); showRoleModal(); });
+        modalCancelButton.addEventListener('click', hideRoleModal);
+        roleSelectButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                startRegistration(e.currentTarget.dataset.role);
+            });
+        });
+
+        // Feather icons
+        feather.replace();
+    </script>
+</body>
+</html>

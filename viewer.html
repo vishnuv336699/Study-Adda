@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Viewer - Study Adda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/feather-icons"></script>
+    <!-- PDF.js Library -->
+    <script src="https://mozilla.github.io/pdf.js/build/pdf.mjs" type="module"></script>
+    <style>
+        body { font-family: 'Poppins', sans-serif; }
+        #viewer-container {
+            /* Custom scrollbar for a cleaner look */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,0,0,0.3) transparent;
+        }
+        .loader { border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #fff; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-100 via-blue-100 to-cyan-100">
+
+    <!-- Loading Spinner -->
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex flex-col items-center justify-center z-50">
+        <div class="loader"></div>
+        <p class="mt-4 text-white">Loading Document...</p>
+    </div>
+
+    <!-- Main Viewer Layout -->
+    <div class="h-screen w-screen flex flex-col">
+        <!-- Header Toolbar -->
+        <header id="toolbar" class="bg-white/70 backdrop-blur-lg shadow-md sticky top-0 z-10 flex items-center justify-between p-2">
+            <a href="dashboard.html" class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-indigo-700 hover:bg-indigo-100 transition">
+                <i data-feather="arrow-left" class="h-4 w-4"></i>
+            </a>
+
+            <div class="flex items-center justify-center space-x-4">
+                <button id="prev-page" class="p-2 rounded-full hover:bg-gray-200 transition"><i data-feather="chevron-left"></i></button>
+                <span>Page: <span id="page-num" class="font-semibold"></span> / <span id="page-count" class="font-semibold"></span></span>
+                <button id="next-page" class="p-2 rounded-full hover:bg-gray-200 transition"><i data-feather="chevron-right"></i></button>
+            </div>
+
+            <div class="flex items-center justify-center space-x-4">
+                <button id="zoom-out" class="p-2 rounded-full hover:bg-gray-200 transition"><i data-feather="zoom-out"></i></button>
+                <span id="zoom-percent" class="font-semibold w-16 text-center">100%</span>
+                <button id="zoom-in" class="p-2 rounded-full hover:bg-gray-200 transition"><i data-feather="zoom-in"></i></button>
+            </div>
+        </header>
+
+        <!-- PDF Canvas Container -->
+        <main id="viewer-container" class="flex-1 overflow-auto p-8">
+            <canvas id="pdf-canvas" class="shadow-2xl"></canvas>
+        </main>
+    </div>
+
+    <script type="module">
+        const { pdfjsLib } = globalThis;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://mozilla.github.io/pdf.js/build/pdf.worker.mjs`;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const noteUrl = urlParams.get('note');
+
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const canvas = document.getElementById('pdf-canvas');
+        const ctx = canvas.getContext('2d');
+        const pageNumSpan = document.getElementById('page-num');
+        const pageCountSpan = document.getElementById('page-count');
+        const prevButton = document.getElementById('prev-page');
+        const nextButton = document.getElementById('next-page');
+        const zoomOutButton = document.getElementById('zoom-out');
+        const zoomInButton = document.getElementById('zoom-in');
+        const zoomPercentSpan = document.getElementById('zoom-percent');
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5; // Initial scale
+
+        function renderPage(num) {
+            pageRendering = true;
+            loadingSpinner.style.display = 'flex';
+            
+            pdfDoc.getPage(num).then((page) => {
+                const viewport = page.getViewport({ scale: scale });
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                const renderContext = { canvasContext: ctx, viewport: viewport };
+                page.render(renderContext).promise.then(() => {
+                    pageRendering = false;
+                    loadingSpinner.style.display = 'none';
+                    if (pageNumPending !== null) {
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+
+            pageNumSpan.textContent = num;
+            zoomPercentSpan.textContent = `${Math.round(scale * 100)}%`;
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function onPrevPage() {
+            if (pageNum <= 1) return;
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        function onNextPage() {
+            if (pageNum >= pdfDoc.numPages) return;
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+
+        function onZoomIn() {
+            if (scale >= 3.0) return; // Max zoom 300%
+            scale += 0.25;
+            renderPage(pageNum);
+        }
+
+        function onZoomOut() {
+            if (scale <= 0.5) return; // Min zoom 50%
+            scale -= 0.25;
+            renderPage(pageNum);
+        }
+
+        prevButton.addEventListener('click', onPrevPage);
+        nextButton.addEventListener('click', onNextPage);
+        zoomInButton.addEventListener('click', onZoomIn);
+        zoomOutButton.addEventListener('click', onZoomOut);
+
+        if (noteUrl) {
+            const loadingTask = pdfjsLib.getDocument(noteUrl);
+            loadingTask.promise.then((pdf) => {
+                pdfDoc = pdf;
+                pageCountSpan.textContent = pdfDoc.numPages;
+                renderPage(pageNum);
+                feather.replace();
+            }, (reason) => {
+                console.error(reason);
+                alert('Error loading PDF.');
+                loadingSpinner.style.display = 'none';
+            });
+        } else {
+            alert("No document specified.");
+            loadingSpinner.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
